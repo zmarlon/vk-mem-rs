@@ -45,7 +45,7 @@ impl Drop for TestHarness {
 impl TestHarness {
     pub fn new() -> Self {
         let app_name = ::std::ffi::CString::new("vk-mem testing").unwrap();
-        let app_info = ash::vk::ApplicationInfo::builder()
+        let app_info = ash::vk::ApplicationInfo::default()
             .application_name(&app_name)
             .application_version(0)
             .engine_name(&app_name)
@@ -59,11 +59,10 @@ impl TestHarness {
             .collect();
 
         let extension_names_raw = extension_names();
-        let create_info = ash::vk::InstanceCreateInfo::builder()
+        let create_info = ash::vk::InstanceCreateInfo::default()
             .application_info(&app_info)
             .enabled_layer_names(&layers_names_raw)
             .enabled_extension_names(&extension_names_raw);
-
 
         let entry = unsafe { ash::Entry::load().unwrap() };
         let instance: ash::Instance = unsafe {
@@ -72,7 +71,7 @@ impl TestHarness {
                 .expect("Instance creation error")
         };
 
-        let debug_info = ash::vk::DebugReportCallbackCreateInfoEXT::builder()
+        let debug_info = ash::vk::DebugReportCallbackCreateInfoEXT::default()
             .flags(
                 ash::vk::DebugReportFlagsEXT::ERROR
                     | ash::vk::DebugReportFlagsEXT::WARNING
@@ -111,13 +110,12 @@ impl TestHarness {
 
         let priorities = [1.0];
 
-        let queue_info = [ash::vk::DeviceQueueCreateInfo::builder()
+        let queue_info = [ash::vk::DeviceQueueCreateInfo::default()
             .queue_family_index(queue_family_index as u32)
-            .queue_priorities(&priorities)
-            .build()];
+            .queue_priorities(&priorities)];
 
         let device_create_info =
-            ash::vk::DeviceCreateInfo::builder().queue_create_infos(&queue_info);
+            ash::vk::DeviceCreateInfo::default().queue_create_infos(&queue_info);
 
         let device: ash::Device = unsafe {
             instance
@@ -136,7 +134,8 @@ impl TestHarness {
     }
 
     pub fn create_allocator(&self) -> vk_mem::Allocator {
-        let create_info = vk_mem::AllocatorCreateInfo::new(&self.instance, &self.device, &self.physical_device);
+        let create_info =
+            vk_mem::AllocatorCreateInfo::new(&self.instance, &self.device, &self.physical_device);
         vk_mem::Allocator::new(create_info).unwrap()
     }
 }
@@ -156,18 +155,15 @@ fn create_allocator() {
 fn create_gpu_buffer() {
     let harness = TestHarness::new();
     let allocator = harness.create_allocator();
-    let allocation_info =  vk_mem::AllocationCreateInfo::new().usage(vk_mem::MemoryUsage::GpuOnly);
+    let allocation_info = vk_mem::AllocationCreateInfo::new().usage(vk_mem::MemoryUsage::GpuOnly);
 
     unsafe {
         let (buffer, allocation, allocation_info) = allocator
             .create_buffer(
-                &ash::vk::BufferCreateInfo::builder()
-                    .size(16 * 1024)
-                    .usage(
-                        ash::vk::BufferUsageFlags::VERTEX_BUFFER
-                            | ash::vk::BufferUsageFlags::TRANSFER_DST,
-                    )
-                    .build(),
+                &ash::vk::BufferCreateInfo::default().size(16 * 1024).usage(
+                    ash::vk::BufferUsageFlags::VERTEX_BUFFER
+                        | ash::vk::BufferUsageFlags::TRANSFER_DST,
+                ),
                 &allocation_info,
             )
             .unwrap();
@@ -180,21 +176,19 @@ fn create_gpu_buffer() {
 fn create_cpu_buffer_preferred() {
     let harness = TestHarness::new();
     let allocator = harness.create_allocator();
-    let allocation_info =  vk_mem::AllocationCreateInfo::new()
+    let allocation_info = vk_mem::AllocationCreateInfo::new()
         .required_flags(ash::vk::MemoryPropertyFlags::HOST_VISIBLE)
-        .preferred_flags(ash::vk::MemoryPropertyFlags::HOST_COHERENT
-            | ash::vk::MemoryPropertyFlags::HOST_CACHED)
+        .preferred_flags(
+            ash::vk::MemoryPropertyFlags::HOST_COHERENT | ash::vk::MemoryPropertyFlags::HOST_CACHED,
+        )
         .flags(vk_mem::AllocationCreateFlags::MAPPED);
     unsafe {
         let (buffer, allocation, allocation_info) = allocator
             .create_buffer(
-                &ash::vk::BufferCreateInfo::builder()
-                    .size(16 * 1024)
-                    .usage(
-                        ash::vk::BufferUsageFlags::VERTEX_BUFFER
-                            | ash::vk::BufferUsageFlags::TRANSFER_DST,
-                    )
-                    .build(),
+                &ash::vk::BufferCreateInfo::default().size(16 * 1024).usage(
+                    ash::vk::BufferUsageFlags::VERTEX_BUFFER
+                        | ash::vk::BufferUsageFlags::TRANSFER_DST,
+                ),
                 &allocation_info,
             )
             .unwrap();
@@ -208,15 +202,15 @@ fn create_gpu_buffer_pool() {
     let harness = TestHarness::new();
     let allocator = harness.create_allocator();
 
-    let buffer_info = ash::vk::BufferCreateInfo::builder()
+    let buffer_info = ash::vk::BufferCreateInfo::default()
         .size(16 * 1024)
-        .usage(ash::vk::BufferUsageFlags::UNIFORM_BUFFER | ash::vk::BufferUsageFlags::TRANSFER_DST)
-        .build();
+        .usage(ash::vk::BufferUsageFlags::UNIFORM_BUFFER | ash::vk::BufferUsageFlags::TRANSFER_DST);
 
     let mut allocation_info = vk_mem::AllocationCreateInfo::new()
         .required_flags(ash::vk::MemoryPropertyFlags::HOST_VISIBLE)
-        .preferred_flags(ash::vk::MemoryPropertyFlags::HOST_COHERENT
-            | ash::vk::MemoryPropertyFlags::HOST_CACHED)
+        .preferred_flags(
+            ash::vk::MemoryPropertyFlags::HOST_COHERENT | ash::vk::MemoryPropertyFlags::HOST_CACHED,
+        )
         .flags(vk_mem::AllocationCreateFlags::MAPPED);
     unsafe {
         let memory_type_index = allocator
@@ -245,8 +239,7 @@ fn create_gpu_buffer_pool() {
 fn test_gpu_stats() {
     let harness = TestHarness::new();
     let allocator = harness.create_allocator();
-    let allocation_info = vk_mem::AllocationCreateInfo::new()
-        .usage(vk_mem::MemoryUsage::GpuOnly);
+    let allocation_info = vk_mem::AllocationCreateInfo::new().usage(vk_mem::MemoryUsage::GpuOnly);
 
     unsafe {
         let stats_1 = allocator.calculate_stats().unwrap();
@@ -256,13 +249,10 @@ fn test_gpu_stats() {
 
         let (buffer, allocation, _allocation_info) = allocator
             .create_buffer(
-                &ash::vk::BufferCreateInfo::builder()
-                    .size(16 * 1024)
-                    .usage(
-                        ash::vk::BufferUsageFlags::VERTEX_BUFFER
-                            | ash::vk::BufferUsageFlags::TRANSFER_DST,
-                    )
-                    .build(),
+                &ash::vk::BufferCreateInfo::default().size(16 * 1024).usage(
+                    ash::vk::BufferUsageFlags::VERTEX_BUFFER
+                        | ash::vk::BufferUsageFlags::TRANSFER_DST,
+                ),
                 &allocation_info,
             )
             .unwrap();
@@ -286,8 +276,7 @@ fn test_stats_string() {
     let harness = TestHarness::new();
     let allocator = harness.create_allocator();
 
-    let allocation_info = vk_mem::AllocationCreateInfo::new()
-        .usage(vk_mem::MemoryUsage::GpuOnly);
+    let allocation_info = vk_mem::AllocationCreateInfo::new().usage(vk_mem::MemoryUsage::GpuOnly);
 
     unsafe {
         let stats_1 = allocator.build_stats_string(true).unwrap();
@@ -295,13 +284,10 @@ fn test_stats_string() {
 
         let (buffer, allocation, _allocation_info) = allocator
             .create_buffer(
-                &ash::vk::BufferCreateInfo::builder()
-                    .size(16 * 1024)
-                    .usage(
-                        ash::vk::BufferUsageFlags::VERTEX_BUFFER
-                            | ash::vk::BufferUsageFlags::TRANSFER_DST,
-                    )
-                    .build(),
+                &ash::vk::BufferCreateInfo::default().size(16 * 1024).usage(
+                    ash::vk::BufferUsageFlags::VERTEX_BUFFER
+                        | ash::vk::BufferUsageFlags::TRANSFER_DST,
+                ),
                 &allocation_info,
             )
             .unwrap();

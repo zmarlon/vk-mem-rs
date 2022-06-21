@@ -29,7 +29,7 @@ travis-ci = { repository = "gwihlidal/vk-mem-rs" }
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-ash = ">= 0.35"
+ash = { git = "https://github.com/projectkml/ash" }
 bitflags = "1.2.1"
 
 [build-dependencies]
